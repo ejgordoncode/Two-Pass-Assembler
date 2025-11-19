@@ -27,12 +27,56 @@
 
 // record LITTAB and SYMTAB
 
+
+// Necessary Includes //
+#include <iostream> // device input and output
+#include <fstream> // file input and output
+#include <string>
+using namespace std;
+
+// Assembler Directives //
+unordered_set<string> assemblerDirectives = {
+  "START",
+  "END",
+  "WORD",
+  "RESW",
+  "RESB",
+  "BYTE",
+  "LTORG",
+  "BASE",
+  "NOBASE",
+}
+
+// Set index = 0
+int index = 0;
+
+// main logic for pass1 //
+
+int main(int argc, char* argv[]){
+  // check if user provided an input file
+  if argc < 2 { 
+    cerr << "Sorry, no input file provided." << endl;
+    return 1; // terminate assembly
+  }
+
+  // open input file
+  string inputFileName = argv[1];
+  if (!inputFileName.is_open()){
+    cerr << "Sorry, failed to open %s" << inputFileName << endl;
+    return 1; //terminate assembly
+  }
+
+  
+  
+
+  //
+}
+
 /* REFINED PSEUDOCODE:
 
 Function Pass1_pass1(lines):
 
-    Initialize LOCCTR to 0
-    Set index = 0
+    Set index = 0 DONE
 
     If the first line's opcode is "START":
         Convert operand (hex string) to integer → LOCCTR
