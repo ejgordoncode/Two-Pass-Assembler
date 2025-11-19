@@ -19,6 +19,16 @@ vector<string> tokenize(string& line){
 bool parseLine(string& line, string& label, string& opcode, string& operand){
     vector<string> tokens = tokenize(line);
 
+    // check if line is empty
+    if (tokens.empty()) {
+        return false;
+    }
+
+    // check if line is comment
+    if (tokens[0] == ".") {
+        return false;
+    }
+
     // Handle parsing based on number of tokens in line
     switch (tokens.size()){
         case 1:

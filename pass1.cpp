@@ -53,6 +53,13 @@ int index = 0;
 // main logic for pass1 //
 
 int main(int argc, char* argv[]){
+
+  // variables //
+  string label, opcode, operand;
+  bool isStart = false;
+  bool isComment = false;
+  bool isDirective = false;
+
   // check if user provided an input file
   if (argc < 2) { 
     cerr << "Sorry, no input file provided." << endl;
@@ -72,6 +79,93 @@ int main(int argc, char* argv[]){
     }
     inputFile.close(); // don't leave your windows open, son!
   }
+
+  // process input file(s)
+  while (getLine(inputFile, line)) {
+
+    // parse line
+    bool parsed = parseLine(line, label, opcode, operand);
+
+    // check if line had parsable input
+    if (!parsed) {
+      continue; // skip line
+    }
+
+    // check if line is a START directive
+    if (opcode == "START" && (isStart == false)) {
+      LOCCTR = stoi(operand, nullptr, 16); // convert hex to int
+      isStart = true;
+      index = 1; // increment index to start processing from the next line
+      continue;
+    }
+
+    // process label 
+    if (!label.empty()) {
+
+      // handle duplicate labels
+      if (SYMTAB.count(label) > 0) {
+        cerr << "Error: duplicate symbol " << label << endl;
+        return 1; // terminate assembly
+      }
+      else {
+        SYMTAB[label] = LOCCTR;
+      }
+    }
+
+    // process opcode
+
+    // handle format 4 instructions
+    if (opcode.starts_with("+")) {
+      opcode.substr(1); // remove + from opcode
+      LOCCTR += 1; // increment LOCCTR by 1
+    }
+    // increment LOCCTR by the length of the instruction
+    if (OPTAB.count(opcode) > 0) {
+      LOCCTR += OPTAB[opcode].format;
+    }
+    else {
+      // handle assembler directives
+      switch (opcode) {
+        case "WORD":
+          LOCCTR += 3;
+          break;
+        case "RESW":
+          LOCCTR += 3 * stoi(operand);
+          break;
+        case "RESB":
+          LOCCTR += stoi(operand);
+          break;
+        case "BYTE":
+          LOCCTR += operand.length() / 2;
+          break;
+        default:
+          cerr << "Error: invalid opcode: " << opcode << " on line: " << line << endl;
+          return 1; // terminate assembly
+      }
+
+      // handle literals
+      if (operand.starts_with("=")) {
+        switch (operand.substr(1, 2)) {
+          case "X":
+            LITTAB[operand.substr(3,)] = {operand.substr(3), operand.substr(3), operand.length() / 2, LOCCTR};
+            LOCCTR += operand.length() / 2;
+            break;
+          case "C":
+            LITTAB[operand.substr(3, operand.length() - 2)] = {operand.substr(3, operand.length() - 2), operand.length() - 3, LOCCTR};
+            LOCCTR += operand.length() / 2;
+            break;
+        }
+      }
+    }
+    
+
+
+  // If the first line's opcode is "START":
+  //       Convert operand (hex string) to integer → LOCCTR
+  //       index = 1
+  
+
+  
 
 
 
