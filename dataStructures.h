@@ -10,6 +10,11 @@ using namespace std;
 //   allowing access to be shared without additional storage for each 
 //   instance
 
+struct OpTabRow {
+  unsigned int opcode;
+  unsigned int format;
+};
+
 struct Literal {
   string label;
   string val;
@@ -23,7 +28,7 @@ extern unordered_map<string, Literal> LITTAB;
 
 extern unordered_map<string, int> SYMTAB;
 
-extern unordered_map<string, int> OPTAB;
+extern unordered_map<string, OpTabRow> OPTAB;
 
 extern int LOCCTR;
 
