@@ -54,19 +54,27 @@ int index = 0;
 
 int main(int argc, char* argv[]){
   // check if user provided an input file
-  if argc < 2 { 
+  if (argc < 2) { 
     cerr << "Sorry, no input file provided." << endl;
     return 1; // terminate assembly
   }
 
-  // open input file
-  string inputFileName = argv[1];
-  if (!inputFileName.is_open()){
-    cerr << "Sorry, failed to open %s" << inputFileName << endl;
-    return 1; //terminate assembly
+  // open input file(s)
+  for (int arg = 1; arg < argc; arg++) {
+    string inputFileName = argv[arg];
+    ifstream inputFile(inputFileName);
+    if (!inputFile.is_open()){
+      cerr << "Sorry, failed to open " << inputFileName << endl;
+      return 1; //terminate assembly
+    }
+    else {
+      cout << "Successfully opened %s" << inputFileName << endl;
+    }
+    inputFile.close(); // don't leave your windows open, son!
   }
 
-  
+
+
   
 
   //
