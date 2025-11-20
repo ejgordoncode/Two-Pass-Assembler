@@ -1,226 +1,221 @@
-// open each file from input
-
-// scan each opened file
-
-// get the starting address from START directive
-
-// assign LOCCTR to the starting address
-
-// FOR EACH LINE:
-
-/*
-    extract label, opcode, operand
-    update SYMTAB
-      check for duplicates
-      update LOCCTR
-    determine instruction format and increment LOCCTR accordingly
-    if encountering an assembler directive that affects LOCCTR or
-        literals, recognize and process accordingly
-    record info to intermediate file (location, symbol, opcode, operand
-*/
-
-// build LITTAB for all literals encountered
-
-// assign addresses to unassigned literals when encountering END or LTORG
-
-// determine program length
-
-// record LITTAB and SYMTAB
-
-
-// Necessary Includes //
-#include <iostream> // device input and output
-#include <fstream> // file input and output
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <unordered_map>
+#include <unordered_set>
 #include <string>
+#include <iomanip>
+
 using namespace std;
 
-// Assembler Directives //
-unordered_set<string> assemblerDirectives = {
-  "START",
-  "END",
-  "WORD",
-  "RESW",
-  "RESB",
-  "BYTE",
-  "LTORG",
-  "BASE",
-  "NOBASE",
+
+//optab(accounted for as many as I could find)
+
+struct OpInfo {
+    int format;   //4 possible formats as listed below
+};
+
+unordered_map<string, OpInfo> OPTAB = {
+    // Format 1
+    {"FIX", {1}}, {"FLOAT", {1}}, {"HIO", {1}}, {"NORM", {1}}, {"SIO", {1}}, {"TIO", {1}},
+
+    // Format 2
+    {"ADDR", {2}}, {"CLEAR", {2}}, {"COMPR", {2}}, {"DIVR", {2}}, {"MULR", {2}},
+    {"RMO", {2}}, {"SHIFTL", {2}}, {"SHIFTR", {2}}, {"SUBR", {2}},
+    {"SVC", {2}}, {"TIXR", {2}},
+
+    // Format 3/4 instructions
+    {"ADD", {3}}, {"ADDF", {3}}, {"AND", {3}}, {"COMP", {3}}, {"COMPF", {3}},
+    {"DIV", {3}}, {"DIVF", {3}}, {"J", {3}}, {"JEQ", {3}}, {"JGT", {3}},
+    {"JLT", {3}}, {"JSUB", {3}}, {"LDA", {3}}, {"LDB", {3}}, {"LDCH", {3}},
+    {"LDF", {3}}, {"LDL", {3}}, {"LDS", {3}}, {"LDT", {3}}, {"LDX", {3}},
+    {"LPS", {3}}, {"MUL", {3}}, {"MULF", {3}}, {"OR", {3}}, {"RD", {3}},
+    {"RSUB", {3}}, {"SSK", {3}}, {"STA", {3}}, {"STB", {3}}, {"STCH", {3}},
+    {"STF", {3}}, {"STI", {3}}, {"STL", {3}}, {"STS", {3}}, {"STSW", {3}},
+    {"STT", {3}}, {"STX", {3}}, {"SUB", {3}}, {"SUBF", {3}}, {"TD", {3}},
+    {"TIX", {3}}, {"WD", {3}}
+};
+
+// directives
+unordered_set<string> DIRECTIVES = {
+    "START", "END", "WORD", "RESW", "RESB", "BYTE", "LTORG", "BASE", "NOBASE"
+};
+
+// symbol table (accessing symtab)
+unordered_map<string, int> SYMTAB;
+
+// literal table (unsure if this format is right)
+struct Literal {
+    string value;
+    int length;
+    int address;
+};
+unordered_map<string, Literal> LITTAB;
+
+
+//helper functions below:
+
+// parses a line onto  - LABEL, OPCODE, OPERAND
+bool parseLine(const string &line, string &label, string &opcode, string &operand) {
+    if (line.empty() || line[0] == '.') return false; 
+
+    stringstream ss(line);
+    ss >> label >> opcode >> operand;
+
+    // if line inputed only has opcode + oprand, label is empty
+    if (opcode.empty()) {
+        opcode = label;
+        label = "";
+    }
+
+    return true;
 }
 
-// Set index = 0
-int index = 0;
 
-// main logic for pass1 //
+//assign addresses to literals (utilizing locctr)
 
-int main(int argc, char* argv[]){
-
-  // variables //
-  string label, opcode, operand;
-  bool isStart = false;
-  bool isComment = false;
-  bool isDirective = false;
-
-  // check if user provided an input file
-  if (argc < 2) { 
-    cerr << "Sorry, no input file provided." << endl;
-    return 1; // terminate assembly
-  }
-
-  // open input file(s)
-  for (int arg = 1; arg < argc; arg++) {
-    string inputFileName = argv[arg];
-    ifstream inputFile(inputFileName);
-    if (!inputFile.is_open()){
-      cerr << "Sorry, failed to open " << inputFileName << endl;
-      return 1; //terminate assembly
-    }
-    else {
-      cout << "Successfully opened %s" << inputFileName << endl;
-    }
-    inputFile.close(); // don't leave your windows open, son!
-  }
-
-  // process input file(s)
-  while (getLine(inputFile, line)) {
-
-    // parse line
-    bool parsed = parseLine(line, label, opcode, operand);
-
-    // check if line had parsable input
-    if (!parsed) {
-      continue; // skip line
-    }
-
-    // check if line is a START directive
-    if (opcode == "START" && (isStart == false)) {
-      LOCCTR = stoi(operand, nullptr, 16); // convert hex to int
-      isStart = true;
-      index = 1; // increment index to start processing from the next line
-      continue;
-    }
-
-    // process label 
-    if (!label.empty()) {
-
-      // handle duplicate labels
-      if (SYMTAB.count(label) > 0) {
-        cerr << "Error: duplicate symbol " << label << endl;
-        return 1; // terminate assembly
-      }
-      else {
-        SYMTAB[label] = LOCCTR;
-      }
-    }
-
-    // process opcode
-
-    // handle format 4 instructions
-    if (opcode.starts_with("+")) {
-      opcode.substr(1); // remove + from opcode
-      LOCCTR += 1; // increment LOCCTR by 1
-    }
-    // increment LOCCTR by the length of the instruction
-    if (OPTAB.count(opcode) > 0) {
-      LOCCTR += OPTAB[opcode].format;
-    }
-    else {
-      // handle assembler directives
-      switch (opcode) {
-        case "WORD":
-          LOCCTR += 3;
-          break;
-        case "RESW":
-          LOCCTR += 3 * stoi(operand);
-          break;
-        case "RESB":
-          LOCCTR += stoi(operand);
-          break;
-        case "BYTE":
-          LOCCTR += operand.length() / 2;
-          break;
-        default:
-          cerr << "Error: invalid opcode: " << opcode << " on line: " << line << endl;
-          return 1; // terminate assembly
-      }
-
-      // handle literals
-      if (operand.starts_with("=")) {
-        switch (operand.substr(1, 2)) {
-          case "X":
-            LITTAB[operand.substr(3,)] = {operand.substr(3), operand.substr(3), operand.length() / 2, LOCCTR};
-            LOCCTR += operand.length() / 2;
-            break;
-          case "C":
-            LITTAB[operand.substr(3, operand.length() - 2)] = {operand.substr(3, operand.length() - 2), operand.length() - 3, LOCCTR};
-            LOCCTR += operand.length() / 2;
-            break;
+void processLiterals(int &LOCCTR) {
+    for (auto &lit : LITTAB) {
+        if (lit.second.address == -1) { // unassigned
+            lit.second.address = LOCCTR;
+            LOCCTR += lit.second.length;
         }
-      }
     }
-    
-
-
-  // If the first line's opcode is "START":
-  //       Convert operand (hex string) to integer → LOCCTR
-  //       index = 1
-  
-
-  
-
-
-
-  
-
-  //
 }
 
-/* REFINED PSEUDOCODE:
 
-Function Pass1_pass1(lines):
+//MAIN PASS1!!!!
 
-    Set index = 0 DONE
+int main(int argc, char* argv[]) {
 
-    If the first line's opcode is "START":
-        Convert operand (hex string) to integer → LOCCTR
-        index = 1
+    if (argc < 2) {
+        cerr << "no input present, closing.\n";
+        return 1;
+    }
 
-    For each line from lines[index] to end:
-        Get label, opcode, operand
+    for (int f = 1; f < argc; f++) {
+        string file = argv[f];
+        ifstream fin(file);
+        if (!fin) {
+            cerr << "Error opening the file " << file << endl;
+            continue;
+        }
 
-        If line is a comment:
-            Skip
+        cout << "Loading " << file << endl;
 
-        Else
-            If label is not empty:
-                If label already in SYMTAB:
-                    Error: duplicate symbol
-                Else:
-                    SYMTAB[label] = LOCCTR
+        int LOCCTR = 0;
+        bool started = false;
 
-            If opcode in OPTAB:
-                Look up instruction length (format) from OPTAB
-                LOCCTR += instruction length
-            Else if opcode is assembler directive:
-                If "WORD": LOCCTR += 3
-                Else if "RESW": LOCCTR += 3 * operand value
-                Else if "RESB": LOCCTR += operand value
-                Else if "BYTE": calculate length based on operand; LOCCTR += length
-                Else if "LTORG":
-                    Assign addresses to literals in LITTAB if any; update LOCCTR
-                Else if "BASE" or "NOBASE":
-                    No LOCCTR increment
-                Else if "END":
-                    Process any remaining literals; break loop
-                Else:
-                    Error invalid opcode/directive
+        string line, label, opcode, operand;
 
-            If operand is a literal (starts with '='):
-                If literal not in LITTAB:
-                    Add literal to LITTAB
+        while (getline(fin, line)) {
+            if (!parseLine(line, label, opcode, operand))
+                continue;
 
-            Write line and LOCCTR info to listing output (optional)
+            //start directive here
+            if (opcode == "START" && !started) {
+                LOCCTR = stoi(operand, nullptr, 16);
+                started = true;
+                continue;
+            }
 
-    Write SYMTAB and LITTAB to their respective output files
+            //symtab label processing
+            if (!label.empty()) {
+                if (SYMTAB.count(label)) {
+                    cerr << "ERROR: multiple labels with name: " << label << endl;
+                    return 1;
+                }
+                SYMTAB[label] = LOCCTR;
+            }
+
+            /* =============================
+               OPCODE PROCESSING
+               ============================= */
+
+            bool format4 = false;
+
+            // format 4: +OP
+            if (opcode[0] == '+') {
+                opcode = opcode.substr(1);
+                format4 = true;
+            }
+
+            if (OPTAB.count(opcode)) {
+                // format 4 is always +1 byte over format 3 => 4 bytes
+                if (format4) {
+                    LOCCTR += 4;
+                } else {
+                    LOCCTR += OPTAB[opcode].format;
+                }
+            }
+
+            //directives are here
+            else if (DIRECTIVES.count(opcode)) {
+
+                if (opcode == "WORD") LOCCTR += 3;
+
+                else if (opcode == "RESW") LOCCTR += 3 * stoi(operand);
+
+                else if (opcode == "RESB") LOCCTR += stoi(operand);
+
+                else if (opcode == "BYTE") {
+                    if (operand[0] == 'C') {
+                        LOCCTR += operand.length() - 3;  // C'EOF'
+                    }
+                    else if (operand[0] == 'X') {
+                        LOCCTR += (operand.length() - 3) / 2; // X'05'
+                    }
+                }
+
+                else if (opcode == "LTORG") {
+                    processLiterals(LOCCTR);
+                }
+
+                else if (opcode == "END") {
+                    processLiterals(LOCCTR);
+                    break; // pass1 stops here
+                }
+            }
+
+            // literal processing
+            if (!operand.empty() && operand[0] == '=') {
+
+                string literal = operand;
+
+                if (!LITTAB.count(literal)) {
+                    Literal L;
+                    L.address = -1;
+
+                    if (literal[1] == 'C') {
+                        string chars = literal.substr(3, literal.length() - 4);
+                        L.length = chars.length();
+                    } else if (literal[1] == 'X') {
+                        string hexval = literal.substr(3, literal.length() - 4);
+                        L.length = hexval.length() / 2;
+                    }
+
+                    LITTAB[literal] = L;
+                }
+            }
+        }
+
+    }
+
+    //return and print current symbol table
+    cout << "\n==== SYMTAB ====\n";
+    for (auto &s : SYMTAB)
+        cout << setw(10) << s.first << " : " << hex << s.second << endl;
+
+    //return and print littab
+    cout << "\n==== LITTAB ====\n";
+    for (auto &l : LITTAB)
+        cout << setw(10) << l.first << " @ " << hex << l.second.address
+             << " len=" << dec << l.second.length << endl;
+
+    return 0;
+}
+
+
 
 End Function
  */
