@@ -32,6 +32,8 @@ extern unordered_map<string, OpTabRow> OPTAB;
 
 extern int LOCCTR;
 
+// function to initialize OPTAB
+void initOPTAB();
 
 
 #endif

@@ -1,0 +1,23 @@
+COPY    START   0
+FIRST   STL     RETADR
+        LDB     #LENGTH
+        BASE    LENGTH
+CLOOP   +JSUB   RDREC
+        LDA     LENGTH
+        COMP    #0
+        JEQ     ENDFIL
+        +JSUB   WRREC
+        J       CLOOP
+ENDFIL  LDA     =C'EOF'
+        STA     BUFFER
+        LDA     #3
+        STA     LENGTH
+        +JSUB   WRREC
+        LDL     RETADR
+        RSUB
+RETADR  RESW    1
+LENGTH  RESW    1
+BUFFER  RESB    4096
+        LTORG
+        END     FIRST
+
