@@ -1,0 +1,7 @@
+TEST    START   0
+        BYTE    C'ABC'
+        BYTE    X'12'
+        BYTE    X'3456'
+        RESW    1
+        END     TEST
+

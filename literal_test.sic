@@ -1,0 +1,8 @@
+TEST    START   0
+        LDA     =C'HELLO'
+        STA     BUFFER
+        LDA     =X'1234'
+        STA     DATA
+        LTORG
+        END     TEST
+

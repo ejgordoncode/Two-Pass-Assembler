@@ -1,0 +1,8 @@
+PROG    START   1000
+        LDA     DATA
+        STA     RESULT
+        RSUB
+DATA    WORD    25
+RESULT  RESW    1
+        END     PROG
+

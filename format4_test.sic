@@ -1,0 +1,7 @@
+TEST    START   0
+LABEL1  +LDA    SYMBOL
+LABEL2  +STA    SYMBOL
+        RSUB
+SYMBOL  RESW    1
+        END     TEST
+

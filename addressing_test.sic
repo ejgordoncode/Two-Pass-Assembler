@@ -1,0 +1,12 @@
+TEST    START   0
+        LDA     SYMBOL
+        LDA     #100
+        LDA     @SYMBOL
+        LDA     SYMBOL,X
+        BASE    SYMBOL
+        LDA     FAR
+        RSUB
+SYMBOL  RESW    1
+FAR     RESW    1
+        END     TEST
+

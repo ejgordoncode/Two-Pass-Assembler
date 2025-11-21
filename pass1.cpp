@@ -52,6 +52,9 @@ void writeSYMTABFile(const string& filename) {
     cout << "Generated: " << filename << endl;
 }
 
+// forward decl
+void pass2(const string& filename, int progStart);
+
 
 //MAIN PASS1!!!!
 
@@ -81,6 +84,7 @@ int main(int argc, char* argv[]) {
 
         LOCCTR = 0;
         bool startFound = false;
+        int startAddress = 0;  // track start for pass2
 
         string line, label, opcode, operand;
 
@@ -96,6 +100,7 @@ int main(int argc, char* argv[]) {
                     return 1;
                 }
                 LOCCTR = stoi(operand, nullptr, 16);
+                startAddress = LOCCTR;  // save for pass2
                 startFound = true;
                 continue;
             }
@@ -212,11 +217,14 @@ int main(int argc, char* argv[]) {
 
         fin.close();
 
-        // Generate .st file for this file
+        // generate .st file for this file
         string stFile = getOutputFilename(file, ".st");
         writeSYMTABFile(stFile);
+        
+        // call pass2 to generate listing file
+        pass2(file, startAddress);
 
-        // Print SYMTAB and LITTAB for this file (for debugging/verification)
+        // print symtab and littab for debug
         cout << "\n==== SYMTAB for " << file << " ====\n";
         for (auto &s : SYMTAB)
             cout << setw(10) << s.first << " : " << hex << uppercase 
